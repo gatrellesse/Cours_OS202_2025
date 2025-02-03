@@ -58,6 +58,7 @@ Pourquoi ?
 `make TestProductMatrix.exe && ./TestProductMatrix.exe 1024` *
 Après on essaie pour 2048 avec:
 * `./TestProductMatrix.exe 2048`* 
+
 En concernant des flags du Makefile:
 Les options de compilation sont définies avec CXXFLAGS 
 -std=c++14 → Utilisation du standard C++14.
@@ -67,7 +68,7 @@ Les options de compilation sont définies avec CXXFLAGS
 -g -O0 -D_GLIBCXX_DEBUG (si DEBUG=yes) → Désactive les optimisations (-O0), active le débogage et les vérifications supplémentaires sur les conteneurs STL (_GLIBCXX_DEBUG).
 
 
-  ordre           | time  (n=1024) | MFlops(n=1024) | MFlops(n=2048)|
+  ordre           | time  (n=1024) | MFlops(n=1024) | MFlops(n=2048) |
 ------------------|----------------|----------------|---------------|
 i,j,k (origine)   |     14.8055    |   145.046      | 83.2216|
 j,i,k             |     14.0406    |   152.948      | 80.7032|
