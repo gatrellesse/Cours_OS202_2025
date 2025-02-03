@@ -107,14 +107,14 @@ On peut remarquer que, même si l'on augmente la capacité de calcul en augmenta
 `make TestProductMatrix.exe && ./TestProductMatrix.exe 1024`
 
   szBlock         | MFlops(n=512)  | MFlops(n=1024) | MFlops(n=2048)  |
-------------------|---------|----------------|----------------|---------------
-origine (=max)    |
-32                |81.59  | 384.262|366.757
-64                |55.5952|340.066 |529.559
-128               |198.66 | 464.797| 982.252
-256               |462.454| 1143.11| 1583.62
-512               |564.598| 1332.57| 1904.73
-1024              |546.397| 1140.37| 2113.38
+------------------|---------|----------------|----------------|
+origine (=max)    ||||
+32                |81.59  | 384.262|366.757|
+64                |55.5952|340.066 |529.559|
+128               |198.66 | 464.797| 982.252|
+256               |462.454| 1143.11| 1583.62|
+512               |564.598| 1332.57| 1904.73|
+1024              |546.397| 1140.37| 2113.38|
 
 *Discuter les résultats.*
 L'utilisation de sous-blocs permet d'optimiser l'utilisation des caches, tout en facilitant un parallélisme efficace, ce qui peut améliorer considérablement la performance des calculs de produits de matrices, surtout pour des matrices de grande taille. En divisant mieux les matrices en sous-blocs, on évite les "cache misses" et on facilite le traitement de plusieurs blocs en parallèle grâce au parallélisme.
