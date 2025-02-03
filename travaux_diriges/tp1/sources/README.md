@@ -8,7 +8,21 @@
 *lscpu donne des infos utiles sur le processeur : nb core, taille de cache :*
 
 ```
-Coller ici les infos *utiles* de lscpu.
+Architecture:            x86_64
+  CPU op-mode(s):        32-bit, 64-bit
+  Address sizes:         39 bits physical, 48 bits virtual
+  Byte Order:            Little Endian
+CPU(s):                  4
+  On-line CPU(s) list:   0-3
+Vendor ID:               GenuineIntel
+  Model name:            Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz
+    CPU family:          6
+    Model:               142
+    Thread(s) per core:  2
+    Core(s) per socket:  2
+    Socket(s):           1
+    Stepping:            9
+    BogoMIPS:            5807.99
 ```
 
 
@@ -19,8 +33,8 @@ Coller ici les infos *utiles* de lscpu.
   n            | MFlops
 ---------------|--------
 1024 (origine) |
-               |
-               |
+1023      |
+1025               |
                |
                |
 
@@ -34,14 +48,14 @@ Coller ici les infos *utiles* de lscpu.
 `make TestProduct.exe && ./TestProduct.exe 1024`
 
 
-  ordre           | time    | MFlops  | MFlops(n=2048)
-------------------|---------|---------|----------------
-i,j,k (origine)   | 2.73764 | 782.476 |
-j,i,k             |         |         |
-i,k,j             |         |         |
-k,i,j             |         |         |
-j,k,i             |         |         |
-k,j,i             |         |         |
+  ordre           | time           | MFlops  | MFlops(n=2048)
+------------------|---------       |---------       |----------------
+i,j,k (origine)   |  13.4607       |      159.537   |
+j,i,k             |   16.5879      |  129.461       |
+i,k,j             |    70.2378     |  30.5745       |
+k,i,j             |      70.7537   | 30.3515        |
+j,k,i             |      6.91883   | 310.382        |
+k,j,i             |   4.91008      |    437.363     |
 
 
 *Discuter les résultats.*
