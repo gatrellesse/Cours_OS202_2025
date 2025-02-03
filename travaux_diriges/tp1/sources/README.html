@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="./github-pandoc.css" />
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#td1">TD1</a>
+<ul>
+<li><a href="#lscpu">lscpu</a></li>
+<li><a href="#produit-matrice-matrice">Produit matrice-matrice</a>
+<ul>
+<li><a href="#effet-de-la-taille-de-la-matrice">Effet de la taille de la matrice</a></li>
+<li><a href="#permutation-des-boucles">Permutation des boucles</a></li>
+<li><a href="#omp-sur-la-meilleure-boucle">OMP sur la meilleure boucle</a></li>
+<li><a href="#produit-par-blocs">Produit par blocs</a></li>
+<li><a href="#bloc-omp">Bloc + OMP</a></li>
+<li><a href="#comparaison-avec-blas">Comparaison avec BLAS</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+<h1 id="td1">TD1</h1>
+<p><code>pandoc -s --toc README.md --css=./github-pandoc.css -o README.html</code></p>
+<h2 id="lscpu">lscpu</h2>
+<p><em>lscpu donne des infos utiles sur le processeur : nb core, taille de cache :</em></p>
+<pre><code>Architecture:            x86_64
+  CPU op-mode(s):        32-bit, 64-bit
+  Address sizes:         39 bits physical, 48 bits virtual
+  Byte Order:            Little Endian
+CPU(s):                  4
+  On-line CPU(s) list:   0-3
+Vendor ID:               GenuineIntel
+  Model name:            Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz
+    CPU family:          6
+    Model:               142
+    Thread(s) per core:  2
+    Core(s) per socket:  2
+    Socket(s):           1
+    Stepping:            9
+    BogoMIPS:            5807.99
+Caches (sum of all):     
+  L1d:                   64 KiB (2 instances)
+  L1i:                   64 KiB (2 instances)
+  L2:                    512 KiB (2 instances)
+  L3:                    4 MiB (1 instance)</code></pre>
+<h2 id="produit-matrice-matrice">Produit matrice-matrice</h2>
+<h3 id="effet-de-la-taille-de-la-matrice">Effet de la taille de la matrice</h3>
+<table>
+<thead>
+<tr class="header">
+<th>n</th>
+<th>MFlops</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1024 (origine)</td>
+<td>249.22</td>
+</tr>
+<tr class="even">
+<td>1023</td>
+<td>731.566</td>
+</tr>
+<tr class="odd">
+<td>1025</td>
+<td>545.196</td>
+</tr>
+<tr class="even">
+<td>2048</td>
+<td>249.794</td>
+</tr>
+<tr class="odd">
+<td>2047</td>
+<td>274.71</td>
+</tr>
+</tbody>
+</table>
+<p><em>Expliquer les résultats.</em></p>
+<p>Quand n = 1024 (puissance de 2), les accès mémoire sont alignés et provoquent des conflits de cache, ce qui ralentit l’exécution. En revanche, n = 1023 répartit mieux les accès dans la mémoire, réduisant les conflits et améliorant la performance.</p>
+<p>Pourquoi ? n = 1024 → Accès mémoire réguliers, écrasement des lignes de cache, ralentissement. n = 1023 → Accès plus dispersés, moins de cache misses, exécution plus rapide</p>
+<h3 id="permutation-des-boucles">Permutation des boucles</h3>
+<ul>
+<li><code>make TestProductMatrix.exe &amp;&amp; ./TestProductMatrix.exe 1024</code> *</li>
+</ul>
+<p>Après on essaie pour 2048 avec: * <code>./TestProductMatrix.exe 2048</code>*</p>
+<p>En concernant des flags du Makefile: Les options de compilation sont définies avec CXXFLAGS -std=c++14 → Utilisation du standard C++14. -march=native → Optimisation pour l’architecture du processeur local. -Wall → Active les avertissements du compilateur. -O3 ou -O2 → Optimisation du code (voir section ifdef DEBUG). -g -O0 -D_GLIBCXX_DEBUG (si DEBUG=yes) → Désactive les optimisations (-O0), active le débogage et les vérifications supplémentaires sur les conteneurs STL (_GLIBCXX_DEBUG).</p>
+<table>
+<thead>
+<tr class="header">
+<th>ordre</th>
+<th>time (n=1024)</th>
+<th>MFlops(n=1024)</th>
+<th>MFlops(n=2048)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>i,j,k (origine)</td>
+<td>14.8055</td>
+<td>145.046</td>
+<td>83.2216</td>
+</tr>
+<tr class="even">
+<td>j,i,k</td>
+<td>14.0406</td>
+<td>152.948</td>
+<td>80.7032</td>
+</tr>
+<tr class="odd">
+<td>i,k,j</td>
+<td>56.8103</td>
+<td>37.801</td>
+<td>20.1350</td>
+</tr>
+<tr class="even">
+<td>k,i,j</td>
+<td>64.2873</td>
+<td>33.4045</td>
+<td>15.4596</td>
+</tr>
+<tr class="odd">
+<td>j,k,i</td>
+<td>3.89603</td>
+<td>551.198</td>
+<td>542.506</td>
+</tr>
+<tr class="even">
+<td>k,j,i</td>
+<td>10.120</td>
+<td>1012.87</td>
+<td>558.229</td>
+</tr>
+</tbody>
+</table>
+<p><em>Discuter les résultats.</em> Les résultats nous montrent que, comme l’élément qui change le plus est <code>i</code>, ce sont les colonnes <code>j</code> et <code>k</code> qui sont stockées dans le cache et sont plus rapides à être accessibles par le processeur(mémoire contiguë).</p>
+<h3 id="omp-sur-la-meilleure-boucle">OMP sur la meilleure boucle</h3>
+<p><code>make TestProductMatrix.exe &amp;&amp; OMP_NUM_THREADS=1 ./TestProductMatrix.exe 512</code> <code>./TestProductMatrix.exe 1024</code></p>
+<table>
+<thead>
+<tr class="header">
+<th>OMP_NUM</th>
+<th>MFlops(n=512)</th>
+<th>MFlops(n=1024)</th>
+<th>MFlops(n=2048)</th>
+<th>MFlops(n=4096)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>1227.73</td>
+<td>589.19</td>
+<td>607.14</td>
+<td>653.63</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>394.89</td>
+<td>807.91</td>
+<td>1556.49</td>
+<td>1748.90</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>538.87</td>
+<td>762.01</td>
+<td>1811.11</td>
+<td>1997.31</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>571.91</td>
+<td>1123.71</td>
+<td>1698.66</td>
+<td>2087.59</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>561.62</td>
+<td>1132.33</td>
+<td>2068.67</td>
+<td>1982.18</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>557.96</td>
+<td>605.10</td>
+<td>1907.01</td>
+<td>2173.05</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>520.12</td>
+<td>665.96</td>
+<td>2167.94</td>
+<td>2238.78</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>369.98</td>
+<td>505.05</td>
+<td>1720.42</td>
+<td>2077.48</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img src="image.png" alt="" /><figcaption>courbes</figcaption>
+</figure>
+<p>Pour de petites matrices (n=512), l’ajout de threads réduit la performance en raison de la surcharge de synchronisation. Pour des tailles plus grandes (n=1024, 2048, 4096), les performances augmentent avec le nombre de threads jusqu’à un seuil où la saturation du cache et de la bande passante mémoire entraîne une baisse. L’optimisation dépend du compromis entre l’utilisation efficace des cœurs et les limitations des accès mémoire. On peut remarquer que, même si l’on augmente la capacité de calcul en augmentant le nombre de threads, la mémoire disponible par thread diminue, car la mémoire totale reste constante.</p>
+<h3 id="produit-par-blocs">Produit par blocs</h3>
+<p><code>make TestProductMatrix.exe &amp;&amp; ./TestProductMatrix.exe 1024</code></p>
+<table>
+<thead>
+<tr class="header">
+<th>szBlock</th>
+<th>MFlops(n=512)</th>
+<th>MFlops(n=1024)</th>
+<th>MFlops(n=2048)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>origine (=max)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>32</td>
+<td>81.59</td>
+<td>384.262</td>
+<td>366.757</td>
+</tr>
+<tr class="odd">
+<td>64</td>
+<td>55.5952</td>
+<td>340.066</td>
+<td>529.559</td>
+</tr>
+<tr class="even">
+<td>128</td>
+<td>198.66</td>
+<td>464.797</td>
+<td>982.252</td>
+</tr>
+<tr class="odd">
+<td>256</td>
+<td>462.454</td>
+<td>1143.11</td>
+<td>1583.62</td>
+</tr>
+<tr class="even">
+<td>512</td>
+<td>564.598</td>
+<td>1332.57</td>
+<td>1904.73</td>
+</tr>
+<tr class="odd">
+<td>1024</td>
+<td>546.397</td>
+<td>1140.37</td>
+<td>2113.38</td>
+</tr>
+</tbody>
+</table>
+<p><em>Discuter les résultats.</em> L’utilisation de sous-blocs permet d’optimiser l’utilisation des caches, tout en facilitant un parallélisme efficace, ce qui peut améliorer considérablement la performance des calculs de produits de matrices, surtout pour des matrices de grande taille. En divisant mieux les matrices en sous-blocs, on évite les “cache misses” et on facilite le traitement de plusieurs blocs en parallèle grâce au parallélisme.</p>
+<h3 id="bloc-omp">Bloc + OMP</h3>
+<table>
+<thead>
+<tr class="header">
+<th>szBlock</th>
+<th>OMP_NUM</th>
+<th>MFlops(n=512)</th>
+<th>MFlops(n=1024)</th>
+<th>MFlops(n=2048)</th>
+<th>MFlops(n=4096)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1024</td>
+<td>1</td>
+<td>242.633</td>
+<td>1284.92</td>
+<td>721.409</td>
+<td>647.976</td>
+</tr>
+<tr class="even">
+<td>1024</td>
+<td>8</td>
+<td>581.123</td>
+<td>1500.84</td>
+<td>1716.13</td>
+<td>2160.17</td>
+</tr>
+<tr class="odd">
+<td>512</td>
+<td>1</td>
+<td>478.284</td>
+<td>566.379</td>
+<td>617.49</td>
+<td>653.756</td>
+</tr>
+<tr class="even">
+<td>512</td>
+<td>8</td>
+<td>520.687</td>
+<td>1486.27</td>
+<td>2344.91</td>
+<td>2066.97</td>
+</tr>
+</tbody>
+</table>
+<p><em>Discuter les résultats.</em></p>
+<p>L’optimisation par sous-blocs couplée à l’utilisation de plusieurs threads améliore considérablement les performances de calcul de produits de matrices, en particulier pour des tailles de matrices grandes, où l’utilisation du cache et du parallélisme est essentielle</p>
+<h3 id="comparaison-avec-blas">Comparaison avec BLAS</h3>
+<table>
+<thead>
+<tr class="header">
+<th>n</th>
+<th>MFlops</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>512</td>
+<td>359.145</td>
+</tr>
+<tr class="even">
+<td>1024 (origine)</td>
+<td>485.304</td>
+</tr>
+<tr class="odd">
+<td>1023</td>
+<td>609.516</td>
+</tr>
+<tr class="even">
+<td>1025</td>
+<td>324.171</td>
+</tr>
+<tr class="odd">
+<td>2048</td>
+<td>504.062</td>
+</tr>
+<tr class="even">
+<td>2047</td>
+<td>594.613</td>
+</tr>
+</tbody>
+</table>
+<h1 id="tips">Tips</h1>
+<pre><code>    env
+    OMP_NUM_THREADS=4 ./produitMatriceMatrice.exe</code></pre>
+<pre><code>    $ for i in $(seq 1 4); do elap=$(OMP_NUM_THREADS=$i ./TestProductOmp.exe|grep &quot;Temps CPU&quot;|cut -d &quot; &quot; -f 7); echo -e &quot;$i\t$elap&quot;; done &gt; timers.out</code></pre>
+</body>
+</html>

@@ -54,8 +54,9 @@ Pourquoi ?
 
 ### Permutation des boucles
 
-*Expliquer comment est compilé le code (ligne de make ou de gcc) : on aura besoin de savoir l'optim, les paramètres, etc. Par exemple : *
-`make TestProductMatrix.exe && ./TestProductMatrix.exe 1024` *
+
+* `make TestProductMatrix.exe && ./TestProductMatrix.exe 1024` *
+
 Après on essaie pour 2048 avec:
 * `./TestProductMatrix.exe 2048`* 
 
@@ -86,19 +87,20 @@ Les résultats nous montrent que, comme l'élément qui change le plus est `i`, 
 
 `make TestProductMatrix.exe && OMP_NUM_THREADS=1 ./TestProductMatrix.exe 512`
 `./TestProductMatrix.exe 1024`
-  OMP_NUM         | MFlops(n=512)  | MFlops(n=1024) | MFlops(n=2048)  |
-------------------|---------|----------------|----------------|
-1                 |1227.73| 589.187| 607.135| 653.627|
-2                 |394.886| 807.905| 1556.49| 1748.9|
-3                 |538.87 |762.011 | 1811.11| 1997.31|
-4                 |571.906|1123.71 | 1698.66| 2087.59|
-5                 |561.62 |1132.33 | 2068.67| 1982.18|
-6                 |557.957|605.103 | 1907.01| 2173.05|
-7                 |520.116|665.956 | 2167.94| 2238.78|
-8                 |369.976|505.051 | 1720.42| 2077.48|
 
-*Tracer les courbes de speedup (pour chaque valeur de n), discuter les résultats.*
-![alt text](image.png)
+OMP_NUM  | MFlops(n=512) | MFlops(n=1024) | MFlops(n=2048) | MFlops(n=4096)   |
+---------|---------------|----------------|----------------|----------------|
+1        |   1227.73     |   589.19       |   607.14       |   653.63       |
+2        |   394.89      |   807.91       |  1556.49       |  1748.90|
+3        |   538.87      |   762.01       |  1811.11       |  1997.31|
+4        |   571.91      |  1123.71       |  1698.66       |  2087.59|
+5        |   561.62      |  1132.33       |  2068.67       |  1982.18|
+6        |   557.96      |   605.10       |  1907.01       |  2173.05|
+7        |   520.12      |   665.96       |  2167.94       |  2238.78|
+8        |   369.98      |   505.05       |  1720.42       |  2077.48|
+
+
+![courbes](image.png)
 
 Pour de petites matrices (n=512), l'ajout de threads réduit la performance en raison de la surcharge de synchronisation. Pour des tailles plus grandes (n=1024, 2048, 4096), les performances augmentent avec le nombre de threads jusqu'à un seuil où la saturation du cache et de la bande passante mémoire entraîne une baisse. L'optimisation dépend du compromis entre l'utilisation efficace des cœurs et les limitations des accès mémoire.
 On peut remarquer que, même si l'on augmente la capacité de calcul en augmentant le nombre de threads, la mémoire disponible par thread diminue, car la mémoire totale reste constante.
