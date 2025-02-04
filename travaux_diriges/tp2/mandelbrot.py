@@ -12,6 +12,7 @@ class MandelbrotSet:
     max_iterations: int
     escape_radius:  float = 2.0
 
+
     def __contains__(self, c: complex) -> bool:
         return self.stability(c) == 1
 
@@ -69,3 +70,4 @@ image = Image.fromarray(np.uint8(matplotlib.cm.plasma(convergence.T)*255))
 fin = time()
 print(f"Temps de constitution de l'image : {fin-deb}")
 image.show()
+image.save("mandelbrot.png")
