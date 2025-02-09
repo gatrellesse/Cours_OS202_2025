@@ -4,8 +4,7 @@ from PIL import Image
 import matplotlib.cm
 from time import time
 from math import log
-#To run  mpirun -np 2 python3 mandelbrotMPI.py 
-#mpirun --oversubscribe -np 4 python3 mandelbrotMPI.py
+
 # Mandelbrot Class
 class MandelbrotSet:
     def __init__(self, max_iterations, escape_radius=2.0):
@@ -37,37 +36,45 @@ mandelbrot = MandelbrotSet(max_iterations, escape_radius)
 # Each process computes a block of rows
 reste = height % nbp
 rows_per_process = height // nbp + (1 if reste > rank else 0)
-start_row = rank * rows_per_process 
-end_row = (rank + 1) * rows_per_process if rank != nbp - 1 else height
 
 # Compute Mandelbrot for assigned rows
-local_convergence = np.zeros((rows_per_process, width), dtype=np.float64)
 scaleX, scaleY = 3.0 / width, 2.25 / height
 
+# Chaque processus traite les lignes en mode entrelacé
+local_rows_indices = np.arange(rank, height, nbp)
+local_convergence = np.zeros((len(local_rows_indices), width), dtype=np.float64)
+
+
 start_time = time()
-for y in range(start_row, end_row):
+for idx, y in enumerate(local_rows_indices):
     for x in range(width):
         c = complex(-2.0 + scaleX * x, -1.125 + scaleY * y)
-        local_convergence[y - start_row, x] = mandelbrot.count_iterations(c, smooth=True) / max_iterations
+        local_convergence[idx, x] = mandelbrot.count_iterations(c, smooth=True) / max_iterations
 end_time = time()
-local_duration = end_time - start_time
-print(f"Temps du calcul du rank {rank} de l'ensemble de Mandelbrot : {local_duration}")
-# Gather results on rank 0
+
+print(f"Temps du calcul du rank {rank} : {end_time - start_time}")
+
+
+counts = np.array([local_convergence.size for _ in range(nbp)], dtype=int)
+
+print(counts)
 if rank == 0:
     full_convergence = np.zeros((height, width), dtype=np.float64)
+    displacements = np.array([local_rows_indices[0] * width for local_rows_indices in [np.arange(r, height, nbp) for r in range(nbp)]], dtype=int)
+    print(displacements)
+    recvbuf = (full_convergence, counts, displacements, MPI.DOUBLE)  # Correct recvbuf
 else:
-    full_convergence = None
+    recvbuf = None
 
-comm.Gather(local_convergence, full_convergence, root=0)
+comm.Gatherv(local_convergence, recvbuf, root=0)
 
 # Save image (only on rank 0)
 if rank == 0:
     # Constitution de l'image résultante :
     deb = time()
-    image = Image.fromarray(np.uint8(matplotlib.cm.plasma(full_convergence)*255))
+    image = Image.fromarray(np.uint8(matplotlib.cm.plasma(full_convergence) * 255))
     fin = time()
     print(f"Temps de constitution de l'image : {fin-deb}")
     image.show()
-    image.save("mandelbrot_parallel.png")
-
+    image.save("mandelbrot_parallel_entrelace.png")
 

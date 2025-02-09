@@ -51,6 +51,11 @@ Afin de paralléliser le produit matrice–vecteur, on décide dans un deuxième
 - paralléliser le code séquentiel `matvec.py` en veillant à ce que chaque tâche n’assemble que la partie de la matrice utile à son produit matrice-vecteur partiel. On s’assurera que toutes les tâches à la fin du programme contiennent le vecteur résultat complet.
 - Calculer le speed-up obtenu avec une telle approche
 
+### Results
+
+Tests for dim range(8,80,8) with 4 cores
+![alt text](image.png)
+
 ## 3. Entraînement pour l'examen écrit
 
 Alice a parallélisé en partie un code sur machine à mémoire distribuée. Pour un jeu de données spécifiques, elle remarque que la partie qu’elle exécute en parallèle représente en temps de traitement 90% du temps d’exécution du programme en séquentiel.
