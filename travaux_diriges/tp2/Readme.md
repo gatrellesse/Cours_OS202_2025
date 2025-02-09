@@ -62,9 +62,45 @@ Alice a parallélisé en partie un code sur machine à mémoire distribuée. Pou
 
 En utilisant la loi d’Amdhal, pouvez-vous prédire l’accélération maximale que pourra obtenir Alice avec son code (en considérant n ≫ 1) ?
 
+![alt text](image-1.png)
+
+f = ts - 0.9ts --> best-speed = 1/0.1 = 10
+
 À votre avis, pour ce jeu de donné spécifique, quel nombre de nœuds de calcul semble-t-il raisonnable de prendre pour ne pas trop gaspiller de ressources CPU ?
+
+Puisque n/(1+(n-1)f) = speed
+On ferais le tablau pour les speeds(1,2,...,10)
+
+  Noeuds           | Speed
+---------------|--------
+1	|1
+2	|1.818181818
+3	|2.5
+4	|3.076923077
+5	|3.571428571
+6	|4
+7	|4.375
+8	|4.705882353
+9	|5
+10	|5.263157895
+16	|6.4
+32	|7.804878049
+64	|8.767123288
+128	|9.343065693
+256 |	9.660377358
+
+Il faut choisir 4 ou 6, parce que aprés le speed n`augmente pas beaucoup avec nouveaux noeuds.
 
 En effectuant son cacul sur son calculateur, Alice s’aperçoit qu’elle obtient une accélération maximale de quatre en augmentant le nombre de nœuds de calcul pour son jeu spécifique de données.
 
 En doublant la quantité de donnée à traiter, et en supposant la complexité de l’algorithme parallèle linéaire, quelle accélération maximale peut espérer Alice en utilisant la loi de Gustafson ?
+
+![alt text](image-3.png)
+
+La partie parallèle va doubler et la partie sequentielle va rester le même
+
+ts + tp = 1 --> ts + 2*0.9ts = 1 --> ts = 0.3575s
+
+S(6) = 6 + (1- 6)*0.3575 = 4.2143
+
 
