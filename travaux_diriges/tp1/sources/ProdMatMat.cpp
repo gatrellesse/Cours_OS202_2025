@@ -2,9 +2,7 @@
 #include <cassert>
 #include <iostream>
 #include <thread>
-#if defined(_OPENMP)
 #include <omp.h>
-#endif
 #include "ProdMatMat.hpp"
 
 
