@@ -33,17 +33,12 @@ escape_radius = 10
 # Create Mandelbrot object
 mandelbrot = MandelbrotSet(max_iterations, escape_radius)
 
-# Each process computes a block of rows
-reste = height % nbp
-rows_per_process = height // nbp + (1 if reste > rank else 0)
-
-# Compute Mandelbrot for assigned rows
-scaleX, scaleY = 3.0 / width, 2.25 / height
-
-# Chaque processus traite les lignes en mode entrelacé
+# Each process computes a block of rows in an interleaved manner
 local_rows_indices = np.arange(rank, height, nbp)
 local_convergence = np.zeros((len(local_rows_indices), width), dtype=np.float64)
 
+# Compute Mandelbrot for assigned rows
+scaleX, scaleY = 3.0 / width, 2.25 / height
 
 start_time = time()
 for idx, y in enumerate(local_rows_indices):
@@ -54,27 +49,43 @@ end_time = time()
 
 print(f"Temps du calcul du rank {rank} : {end_time - start_time}")
 
-
-counts = np.array([local_convergence.size for _ in range(nbp)], dtype=int)
-
-print(counts)
+# Gather the data to rank 0
 if rank == 0:
+    # Initialize the full convergence array
     full_convergence = np.zeros((height, width), dtype=np.float64)
-    displacements = np.array([local_rows_indices[0] * width for local_rows_indices in [np.arange(r, height, nbp) for r in range(nbp)]], dtype=int)
-    print(displacements)
-    recvbuf = (full_convergence, counts, displacements, MPI.DOUBLE)  # Correct recvbuf
+    # Calculate counts for each process
+    counts = [len(np.arange(r, height, nbp)) * width for r in range(nbp)]
+    
+    # Calculate displacements for interleaved rows
+    disp = np.zeros(nbp, dtype=int)
+    for r in range(1, nbp):
+        disp[r] = disp[r - 1] + counts[r - 1]
+    displacements = [[] for _ in range(nbp)]
+    for r in range(nbp):
+        for idx, y in enumerate(np.arange(r, height, nbp)):
+            displacements[r].append(y)
+    displacements = np.array(displacements, dtype=int)  # Convert to 1D array of integers
 else:
-    recvbuf = None
+    full_convergence = None
+    counts = None
+    displacements = None
+    disp = None
 
-comm.Gatherv(local_convergence, recvbuf, root=0)
+# Gather the data using Gatherv
+comm.Gatherv(sendbuf=local_convergence, recvbuf=(full_convergence, counts, disp, MPI.DOUBLE), root=0)
 
 # Save image (only on rank 0)
 if rank == 0:
-    # Constitution de l'image résultante :
+    full_convergence_final = np.zeros((height, width), dtype=np.float64)
+    count = 0
+    for d in displacements:
+        print(len(d))
+        for idx in d:
+            full_convergence_final[idx] = full_convergence[count]
+            count += 1
     deb = time()
-    image = Image.fromarray(np.uint8(matplotlib.cm.plasma(full_convergence) * 255))
+    image = Image.fromarray(np.uint8(matplotlib.cm.plasma(full_convergence_final) * 255))
     fin = time()
     print(f"Temps de constitution de l'image : {fin-deb}")
     image.show()
-    image.save("mandelbrot_parallel_entrelace.png")
-
+    image.save("mandelbrot_parallel_interleaved.png")

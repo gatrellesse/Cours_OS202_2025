@@ -44,9 +44,11 @@ if rank == MASTER_RANK:  # Master (Chief) process
     for slave_rank in range(1, nbp): # Distribute initial work
         if rows_remaining:
             row = rows_remaining.pop(0) # Get a row to compute
-            comm.send(row, dest=slave_rank) # Send row to slave
+            request = comm.isend(row, dest=slave_rank) # Send row to slave
+            request.wait()
         else:
-            comm.send(None, dest=slave_rank) # Send a None to indicate no more work
+            request = comm.isend(None, dest=slave_rank) # Send a None to indicate no more work
+            request.wait()
 
     while(len(rows_remaining) > 0):
         for slave_rank in range(1, nbp): # Receive results from slaves

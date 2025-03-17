@@ -1,0 +1,21 @@
+mpirun -np 4 --oversubscribe python3 compute_pi.py  
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+comm.Send(data, dest=1, tag=77)
+comm.Recv(data, , source=0, tag=77)
+
+If sending more than 1 data: 
+    comm.send((row, convergence_values), dest=MASTER_RANK) # Send back row and results
+    local_convergence = comm.recv(source=slave_rank)    
+    row = local_convergence[0]
+    convergence_values = local_convergence[1]
+
+ISEND syntax:
+    req = global_com.isend(task, stat.Get_source())
+    convergence[stat.Get_tag(),:] = row[:]
+    req.wait(None)
+
